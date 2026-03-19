@@ -1,0 +1,144 @@
+{
+  "name": "easy-git",
+  "displayName": "Easy Git",
+  "description": "GoLand-style git blame annotations for VS Code.",
+  "version": "0.0.1",
+  "publisher": "gee-coder",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "SCM Providers"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:easy-git.toggleBlame",
+    "onCommand:easy-git.showBlame",
+    "onCommand:easy-git.hideBlame",
+    "onCommand:easy-git.openCommitDetails"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "easy-git.toggleBlame",
+        "title": "切换行内追溯注解",
+        "category": "Git"
+      },
+      {
+        "command": "easy-git.showBlame",
+        "title": "显示行内追溯注解",
+        "category": "Git"
+      },
+      {
+        "command": "easy-git.hideBlame",
+        "title": "隐藏行内追溯注解",
+        "category": "Git"
+      },
+      {
+        "command": "easy-git.openCommitDetails",
+        "title": "查看当前行提交详情",
+        "category": "Git"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "easy-git.toggleBlame",
+        "key": "ctrl+alt+b",
+        "mac": "cmd+alt+b",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "easy-git.showBlame",
+          "when": "resourceScheme == file && !easyGit.enabled",
+          "group": "navigation@git-blame"
+        },
+        {
+          "command": "easy-git.hideBlame",
+          "when": "resourceScheme == file && easyGit.enabled",
+          "group": "navigation@git-blame"
+        },
+        {
+          "command": "easy-git.openCommitDetails",
+          "when": "resourceScheme == file && easyGit.enabled",
+          "group": "navigation@git-blame"
+        }
+      ],
+      "editor/lineNumber/context": [
+        {
+          "command": "easy-git.showBlame",
+          "when": "resourceScheme == file && !easyGit.enabled",
+          "group": "navigation@git-blame"
+        },
+        {
+          "command": "easy-git.hideBlame",
+          "when": "resourceScheme == file && easyGit.enabled",
+          "group": "navigation@git-blame"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Easy Git",
+      "properties": {
+        "easy-git.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "全局开关，控制是否显示 Git 行内追溯注解。"
+        },
+        "easy-git.colorScheme": {
+          "type": "string",
+          "default": "blue",
+          "enum": [
+            "blue",
+            "green",
+            "purple"
+          ],
+          "description": "行内追溯注解使用的主色调。"
+        },
+        "easy-git.dateFormat": {
+          "type": "string",
+          "default": "relative",
+          "enum": [
+            "relative",
+            "absolute"
+          ],
+          "description": "注解中的时间显示格式。relative 显示相对时间，absolute 显示 YYYY-MM-DD。"
+        },
+        "easy-git.maxLineCount": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 1,
+          "description": "单个文件允许渲染注解的最大行数。超过后会自动跳过，避免性能问题。"
+        },
+        "easy-git.cacheTimeout": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 0,
+          "description": "Git blame 结果缓存时间，单位毫秒。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint \"src/**/*.ts\"",
+    "pretest": "npm run compile",
+    "test": "node --test \"out/test/**/*.test.js\"",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "eslint": "^9.23.0",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.29.0"
+  }
+}
