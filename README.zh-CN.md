@@ -1,8 +1,8 @@
-# Easy Git
+# Easy Git Blame
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-Easy Git 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 GoLand 的 annotate / blame 视图。
+Easy Git Blame 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 GoLand 的 annotate / blame 视图。
 
 ## 主页
 

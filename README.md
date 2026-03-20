@@ -1,8 +1,8 @@
-# Easy Git
+# Easy Git Blame
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-Easy Git is a VS Code extension that brings a GoLand-style inline Git blame experience into the editor.
+Easy Git Blame is a VS Code extension that brings a GoLand-style inline Git blame experience into the editor.
 
 ## Home
 
