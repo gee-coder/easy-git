@@ -1,21 +1,39 @@
 {
   "name": "easy-git",
   "displayName": "Easy Git",
-  "description": "GoLand-style git blame annotations for VS Code.",
-  "version": "0.0.1",
+  "description": "GoLand-style inline Git blame for VS Code, with age buckets, uncommitted highlighting, and bilingual UI / 面向 VS Code 的 GoLand 风格 Git 追溯注解扩展，支持时间色阶、未提交高亮和中英文界面。",
+  "version": "1.0.0",
   "publisher": "gee-coder",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/gee-coder/easy-git.git"
   },
+  "homepage": "https://github.com/gee-coder/easy-git.git",
+  "bugs": {
+    "url": "https://github.com/gee-coder/easy-git/issues"
+  },
   "engines": {
     "vscode": "^1.80.0"
+  },
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#1f2532",
+    "theme": "dark"
   },
   "categories": [
     "Other",
     "SCM Providers"
   ],
+  "keywords": [
+    "git",
+    "blame",
+    "annotate",
+    "history",
+    "goland",
+    "scm"
+  ],
+  "markdown": "github",
   "activationEvents": [
     "onStartupFinished",
     "onCommand:easy-git.toggleBlame",
@@ -28,22 +46,22 @@
     "commands": [
       {
         "command": "easy-git.toggleBlame",
-        "title": "切换行内追溯注解",
+        "title": "Toggle Inline Git Blame / 切换行内追溯注解",
         "category": "Git"
       },
       {
         "command": "easy-git.showBlame",
-        "title": "显示行内追溯注解",
+        "title": "Show Inline Git Blame / 显示行内追溯注解",
         "category": "Git"
       },
       {
         "command": "easy-git.hideBlame",
-        "title": "隐藏行内追溯注解",
+        "title": "Hide Inline Git Blame / 隐藏行内追溯注解",
         "category": "Git"
       },
       {
         "command": "easy-git.openCommitDetails",
-        "title": "查看当前行提交详情",
+        "title": "Open Commit Details / 查看当前行提交详情",
         "category": "Git"
       }
     ],
@@ -92,7 +110,7 @@
         "easy-git.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "全局开关，控制是否显示 Git 行内追溯注解。"
+          "description": "Enable or disable inline Git blame annotations globally / 全局启用或关闭行内 Git 追溯注解。"
         },
         "easy-git.colorScheme": {
           "type": "string",
@@ -102,28 +120,49 @@
             "green",
             "purple"
           ],
-          "description": "行内追溯注解使用的主色调。"
+          "description": "Primary annotation palette: blue, green, or purple / 注解主色调，可选 blue、green、purple。"
         },
         "easy-git.dateFormat": {
           "type": "string",
-          "default": "relative",
+          "default": "absolute",
           "enum": [
             "relative",
             "absolute"
           ],
-          "description": "注解中的时间显示格式。relative 显示相对时间，absolute 显示 YYYY-MM-DD。"
+          "description": "Timestamp display format: relative or absolute / 时间显示格式，可选 relative 或 absolute。"
         },
         "easy-git.maxLineCount": {
           "type": "number",
           "default": 5000,
           "minimum": 1,
-          "description": "单个文件允许渲染注解的最大行数。超过后会自动跳过，避免性能问题。"
+          "description": "Skip blame rendering for files over this line count / 超过该行数的文件会跳过 blame 渲染以保护性能。"
         },
         "easy-git.cacheTimeout": {
           "type": "number",
           "default": 60000,
           "minimum": 0,
-          "description": "Git blame 结果缓存时间，单位毫秒。"
+          "description": "Blame cache lifetime in milliseconds / blame 结果缓存时长，单位毫秒。"
+        },
+        "easy-git.maxAnnotationWidth": {
+          "type": "number",
+          "default": 22,
+          "minimum": 8,
+          "description": "Maximum width of the left blame column in ch units / 左侧 blame 信息栏最大宽度，单位 ch。"
+        },
+        "easy-git.uncommittedColor": {
+          "type": "string",
+          "default": "46,160,67",
+          "description": "Color used for uncommitted lines. Supports 46,160,67, rgb(46,160,67), or #2ea043 / 未提交代码颜色，支持 46,160,67、rgb(46,160,67) 或 #2ea043。"
+        },
+        "easy-git.language": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "zh-CN",
+            "en"
+          ],
+          "description": "Extension display language: auto, zh-CN, or en / 扩展显示语言，可选 auto、zh-CN、en。"
         }
       }
     }

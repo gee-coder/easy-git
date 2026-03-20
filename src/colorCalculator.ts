@@ -1,73 +1,237 @@
 import type { ColorScheme } from "./types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const WEEK_MS = 7 * DAY_MS;
-const MONTH_MS = 30 * DAY_MS;
-const SIX_MONTHS_MS = 180 * DAY_MS;
+const YEAR_MS = 365 * DAY_MS;
+const BLUE_HUE_DEGREES = 213;
 
-const SCHEME_RGB: Record<ColorScheme, [number, number, number]> = {
-  blue: [0, 122, 204],
-  green: [31, 139, 76],
-  purple: [124, 58, 237]
-};
+const AGE_BUCKETS_MS = [
+  14 * DAY_MS,
+  120 * DAY_MS,
+  YEAR_MS,
+  2 * YEAR_MS,
+  3 * YEAR_MS,
+  4 * YEAR_MS
+] as const;
 
-export function calculateLineBackground(
+const BLUE_BACKGROUND_PALETTE: Rgb[] = [
+  [47, 81, 148],
+  [46, 77, 139],
+  [44, 63, 102],
+  [39, 53, 80],
+  [37, 49, 73],
+  [35, 43, 62],
+  [34, 38, 50]
+];
+
+const TEXT_PALETTE: Rgb[] = [
+  [206, 208, 214],
+  [192, 195, 202],
+  [176, 181, 191],
+  [162, 167, 177],
+  [152, 156, 164],
+  [141, 145, 153],
+  [140, 144, 149]
+];
+
+type Rgb = [number, number, number];
+
+export function calculateAnnotationBackground(
   timestampMs: number,
   colorScheme: ColorScheme,
   now = Date.now()
 ): string {
-  const progress = getAgeProgress(timestampMs, now);
-  const alpha = lerp(0.18, 0.035, progress);
-  return asRgba(SCHEME_RGB[colorScheme], alpha);
+  return toRgbString(getBackgroundColor(getAgeBucketIndex(timestampMs, now), colorScheme));
 }
 
-export function calculateAnnotationColor(
+export function calculateAnnotationColor(timestampMs: number, _colorScheme: ColorScheme, now = Date.now()): string {
+  return toRgbString(TEXT_PALETTE[getAgeBucketIndex(timestampMs, now)]);
+}
+
+export function calculateAnnotationBorder(
   timestampMs: number,
   colorScheme: ColorScheme,
   now = Date.now()
 ): string {
-  const progress = getAgeProgress(timestampMs, now);
-  const alpha = lerp(0.92, 0.42, progress);
-  return asRgba(SCHEME_RGB[colorScheme], alpha);
+  return toRgbString(lighten(getBackgroundColor(getAgeBucketIndex(timestampMs, now), colorScheme), 0.18));
+}
+
+export function calculateUncommittedAnnotationColor(colorValue: string): string {
+  return toRgbString(parseConfigColor(colorValue));
+}
+
+export function calculateUncommittedAnnotationBackground(colorValue: string): string {
+  const [red, green, blue] = parseConfigColor(colorValue);
+  return `rgba(${red}, ${green}, ${blue}, 0.18)`;
+}
+
+export function calculateUncommittedAnnotationBorder(colorValue: string): string {
+  return toRgbString(lighten(parseConfigColor(colorValue), 0.12));
 }
 
 export function getAgeProgress(timestampMs: number, now = Date.now()): number {
+  return getAgeBucketIndex(timestampMs, now) / (BLUE_BACKGROUND_PALETTE.length - 1);
+}
+
+function getAgeBucketIndex(timestampMs: number, now: number): number {
   const age = Math.max(0, now - timestampMs);
 
-  if (age <= DAY_MS) {
-    return scale(age, 0, DAY_MS, 0, 0.18);
+  for (let index = 0; index < AGE_BUCKETS_MS.length; index += 1) {
+    if (age <= AGE_BUCKETS_MS[index]) {
+      return index;
+    }
   }
 
-  if (age <= WEEK_MS) {
-    return scale(age, DAY_MS, WEEK_MS, 0.18, 0.5);
-  }
-
-  if (age <= MONTH_MS) {
-    return scale(age, WEEK_MS, MONTH_MS, 0.5, 0.82);
-  }
-
-  return Math.min(1, scale(age, MONTH_MS, SIX_MONTHS_MS, 0.82, 1));
+  return BLUE_BACKGROUND_PALETTE.length - 1;
 }
 
-function asRgba([red, green, blue]: [number, number, number], alpha: number): string {
-  return `rgba(${red}, ${green}, ${blue}, ${alpha.toFixed(3)})`;
-}
-
-function lerp(start: number, end: number, progress: number): number {
-  return start + (end - start) * progress;
-}
-
-function scale(
-  value: number,
-  inputStart: number,
-  inputEnd: number,
-  outputStart: number,
-  outputEnd: number
-): number {
-  if (inputEnd <= inputStart) {
-    return outputEnd;
+function getBackgroundColor(index: number, colorScheme: ColorScheme): Rgb {
+  if (colorScheme === "blue") {
+    return BLUE_BACKGROUND_PALETTE[index];
   }
 
-  const ratio = Math.max(0, Math.min(1, (value - inputStart) / (inputEnd - inputStart)));
-  return outputStart + (outputEnd - outputStart) * ratio;
+  return retintBlueSwatch(BLUE_BACKGROUND_PALETTE[index], colorScheme);
+}
+
+function retintBlueSwatch(reference: Rgb, colorScheme: Exclude<ColorScheme, "blue">): Rgb {
+  const hue = colorScheme === "green" ? 152 : 268;
+  const [refHue, refSaturation, refLightness] = rgbToHsl(reference);
+  const saturationBoost = colorScheme === "green" ? 1.12 : 1.08;
+  const shiftedHue = normalizeHue(refHue + (hue - BLUE_HUE_DEGREES));
+  const nextSaturation = clamp(refSaturation * saturationBoost, 0.16, 0.72);
+  return hslToRgb(shiftedHue, nextSaturation, refLightness);
+}
+
+function lighten([red, green, blue]: Rgb, amount: number): Rgb {
+  return [
+    Math.round(red + (255 - red) * amount),
+    Math.round(green + (255 - green) * amount),
+    Math.round(blue + (255 - blue) * amount)
+  ];
+}
+
+function toRgbString([red, green, blue]: Rgb): string {
+  return `rgb(${red}, ${green}, ${blue})`;
+}
+
+function rgbToHsl([red, green, blue]: Rgb): [number, number, number] {
+  const r = red / 255;
+  const g = green / 255;
+  const b = blue / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lightness = (max + min) / 2;
+  const delta = max - min;
+
+  if (delta === 0) {
+    return [0, 0, lightness];
+  }
+
+  const saturation = delta / (1 - Math.abs(2 * lightness - 1));
+  let hue = 0;
+
+  switch (max) {
+    case r:
+      hue = 60 * (((g - b) / delta) % 6);
+      break;
+    case g:
+      hue = 60 * ((b - r) / delta + 2);
+      break;
+    default:
+      hue = 60 * ((r - g) / delta + 4);
+      break;
+  }
+
+  return [normalizeHue(hue), saturation, lightness];
+}
+
+function hslToRgb(hue: number, saturation: number, lightness: number): Rgb {
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const segment = hue / 60;
+  const secondary = chroma * (1 - Math.abs((segment % 2) - 1));
+  const match = lightness - chroma / 2;
+
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  if (segment >= 0 && segment < 1) {
+    red = chroma;
+    green = secondary;
+  } else if (segment < 2) {
+    red = secondary;
+    green = chroma;
+  } else if (segment < 3) {
+    green = chroma;
+    blue = secondary;
+  } else if (segment < 4) {
+    green = secondary;
+    blue = chroma;
+  } else if (segment < 5) {
+    red = secondary;
+    blue = chroma;
+  } else {
+    red = chroma;
+    blue = secondary;
+  }
+
+  return [
+    Math.round((red + match) * 255),
+    Math.round((green + match) * 255),
+    Math.round((blue + match) * 255)
+  ];
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeHue(hue: number): number {
+  const normalized = hue % 360;
+  return normalized < 0 ? normalized + 360 : normalized;
+}
+
+function parseConfigColor(value: string): Rgb {
+  const normalized = value.trim();
+  const fromHex = parseHexColor(normalized);
+  if (fromHex) {
+    return fromHex;
+  }
+
+  const fromRgbFunction = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i.exec(normalized);
+  if (fromRgbFunction) {
+    return clampRgb([
+      Number(fromRgbFunction[1]),
+      Number(fromRgbFunction[2]),
+      Number(fromRgbFunction[3])
+    ]);
+  }
+
+  const fromCsv = /^(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})$/.exec(normalized);
+  if (fromCsv) {
+    return clampRgb([Number(fromCsv[1]), Number(fromCsv[2]), Number(fromCsv[3])]);
+  }
+
+  return [46, 160, 67];
+}
+
+function parseHexColor(value: string): Rgb | undefined {
+  const match = /^#?([0-9a-f]{6})$/i.exec(value);
+  if (!match) {
+    return undefined;
+  }
+
+  const hex = match[1];
+  return [
+    Number.parseInt(hex.slice(0, 2), 16),
+    Number.parseInt(hex.slice(2, 4), 16),
+    Number.parseInt(hex.slice(4, 6), 16)
+  ];
+}
+
+function clampRgb([red, green, blue]: [number, number, number]): Rgb {
+  return [
+    clamp(Math.round(red), 0, 255),
+    clamp(Math.round(green), 0, 255),
+    clamp(Math.round(blue), 0, 255)
+  ];
 }

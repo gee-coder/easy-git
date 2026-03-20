@@ -6,3 +6,4 @@ out/test/**
 eslint.config.mjs
 tsconfig.json
 package-lock.json
+scripts/**

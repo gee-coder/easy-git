@@ -1,5 +1,6 @@
 export type ColorScheme = "blue" | "green" | "purple";
 export type DateFormat = "relative" | "absolute";
+export type DisplayLanguage = "auto" | "zh-CN" | "en";
 
 export interface EasyGitConfig {
   enabled: boolean;
@@ -7,6 +8,9 @@ export interface EasyGitConfig {
   dateFormat: DateFormat;
   maxLineCount: number;
   cacheTimeout: number;
+  maxAnnotationWidth: number;
+  uncommittedColor: string;
+  language: DisplayLanguage;
 }
 
 export interface BlameLineInfo {

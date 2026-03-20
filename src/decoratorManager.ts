@@ -1,20 +1,26 @@
 import * as vscode from "vscode";
 import { BlameManager } from "./blameManager";
 import { COMMAND_OPEN_COMMIT_DETAILS, getExtensionConfig } from "./config";
-import { calculateAnnotationColor, calculateLineBackground } from "./colorCalculator";
+import {
+  calculateAnnotationBackground,
+  calculateAnnotationBorder,
+  calculateAnnotationColor,
+  calculateUncommittedAnnotationBackground,
+  calculateUncommittedAnnotationBorder,
+  calculateUncommittedAnnotationColor
+} from "./colorCalculator";
+import { resolveDisplayLanguage, t } from "./i18n";
 import { formatCompactTimestamp, formatFullDateTime } from "./relativeTime";
 import type { BlameLineInfo, EasyGitConfig } from "./types";
 
 const REFRESH_DELAY_MS = 250;
-const ANNOTATION_WIDTH = "12ch";
+const COLUMN_HORIZONTAL_PADDING_CH = 0.45;
+const COLUMN_MARGIN_RIGHT_CH = 0.25;
 
 export class DecoratorManager implements vscode.Disposable {
   private readonly annotationDecorationType = vscode.window.createTextEditorDecorationType({
-    isWholeLine: true,
     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
   });
-  private readonly backgroundDecorationTypes = new Map<string, vscode.TextEditorDecorationType>();
-  private readonly appliedBackgroundKeys = new WeakMap<vscode.TextEditor, Set<string>>();
   private readonly pendingRefreshes = new Map<string, NodeJS.Timeout>();
   private readonly refreshGeneration = new Map<string, number>();
   private readonly skipMessages = new Map<string, string>();
@@ -56,26 +62,23 @@ export class DecoratorManager implements vscode.Disposable {
     this.skipMessages.delete(documentKey);
     this.renderedLineInfo.set(
       documentKey,
-      new Map(lookup.blame.lines.map((line) => [line.lineNumber, line]))
+      new Map(
+        lookup.blame.lines
+          .filter((line) => !line.isUncommitted)
+          .map((line) => [line.lineNumber, line])
+      )
     );
+    const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
+    const language = resolveDisplayLanguage(config.language, locale);
+    const annotationWidth = calculateAnnotationWidth(lookup.blame.lines, config, locale, language);
 
-    const annotationOptions: vscode.DecorationOptions[] = [];
-    const backgroundBuckets = new Map<string, vscode.Range[]>();
-
-    for (const line of lookup.blame.lines) {
-      const decoration = this.createDecorationOption(editor.document, line, config);
-      if (!decoration) {
-        continue;
-      }
-
-      annotationOptions.push(decoration.annotation);
-      const ranges = backgroundBuckets.get(decoration.backgroundColor) ?? [];
-      ranges.push(decoration.backgroundRange);
-      backgroundBuckets.set(decoration.backgroundColor, ranges);
-    }
+    const annotationOptions = lookup.blame.lines
+      .map((line) =>
+        this.createDecorationOption(editor.document, line, config, locale, language, annotationWidth)
+      )
+      .filter((value): value is vscode.DecorationOptions => value !== undefined);
 
     editor.setDecorations(this.annotationDecorationType, annotationOptions);
-    this.applyBackgroundDecorations(editor, backgroundBuckets);
   }
 
   scheduleRefresh(document: vscode.TextDocument): void {
@@ -133,10 +136,10 @@ export class DecoratorManager implements vscode.Disposable {
     }
     this.pendingRefreshes.clear();
     this.annotationDecorationType.dispose();
-    for (const decorationType of this.backgroundDecorationTypes.values()) {
-      decorationType.dispose();
-    }
-    this.backgroundDecorationTypes.clear();
+  }
+
+  getLineInfo(uri: vscode.Uri, lineNumber: number): BlameLineInfo | undefined {
+    return this.renderedLineInfo.get(uri.toString())?.get(lineNumber);
   }
 
   private async refreshVisibleEditorsForDocument(uri: vscode.Uri): Promise<void> {
@@ -149,66 +152,58 @@ export class DecoratorManager implements vscode.Disposable {
 
   private clearEditor(editor: vscode.TextEditor): void {
     editor.setDecorations(this.annotationDecorationType, []);
-    const previousKeys = this.appliedBackgroundKeys.get(editor);
-    if (!previousKeys) {
-      return;
-    }
-
-    for (const color of previousKeys) {
-      editor.setDecorations(this.getBackgroundDecorationType(color), []);
-    }
-
-    this.appliedBackgroundKeys.delete(editor);
-  }
-
-  getLineInfo(uri: vscode.Uri, lineNumber: number): BlameLineInfo | undefined {
-    return this.renderedLineInfo.get(uri.toString())?.get(lineNumber);
   }
 
   private createDecorationOption(
     document: vscode.TextDocument,
     line: BlameLineInfo,
-    config: EasyGitConfig
-  ):
-    | {
-        annotation: vscode.DecorationOptions;
-        backgroundColor: string;
-        backgroundRange: vscode.Range;
-      }
-    | undefined {
+    config: EasyGitConfig,
+    locale: string,
+    language: ReturnType<typeof resolveDisplayLanguage>,
+    annotationWidth: string
+  ): vscode.DecorationOptions | undefined {
     if (line.lineNumber >= document.lineCount) {
       return undefined;
     }
 
     const textLine = document.lineAt(line.lineNumber);
-    const range = getDecorationRange(textLine);
-    if (!range) {
-      return undefined;
-    }
-
+    const range = getAnnotationRange(textLine);
     const timestampMs = line.authorTime * 1000;
-    const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
 
-    return {
-      annotation: {
+    if (line.isUncommitted) {
+      return {
         range,
-        hoverMessage: buildHoverMessage(document.uri, line),
         renderOptions: {
           before: {
-            contentText: `${getAuthorAbbreviation(line.author)} ${formatCompactTimestamp(
-              timestampMs,
-              config.dateFormat,
-              locale
-            )}`,
-            color: calculateAnnotationColor(timestampMs, config.colorScheme),
-            margin: "0 1ch 0 0",
-            width: ANNOTATION_WIDTH,
-            textDecoration: "none; opacity: 0.95;"
+            contentText: buildUncommittedAnnotationText(config, locale, language),
+            color: calculateUncommittedAnnotationColor(config.uncommittedColor),
+            backgroundColor: calculateUncommittedAnnotationBackground(config.uncommittedColor),
+            margin: `0 ${COLUMN_MARGIN_RIGHT_CH}ch 0 0`,
+            width: annotationWidth,
+            textDecoration: `none; padding: 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch; border-left: 3px solid ${calculateUncommittedAnnotationBorder(
+              config.uncommittedColor
+            )};`
           }
         }
-      },
-      backgroundColor: calculateLineBackground(timestampMs, config.colorScheme),
-      backgroundRange: range
+      };
+    }
+
+    return {
+      range,
+      hoverMessage: buildHoverMessage(document.uri, line, language),
+      renderOptions: {
+        before: {
+          contentText: buildAnnotationText(line, timestampMs, config, locale),
+          color: calculateAnnotationColor(timestampMs, config.colorScheme),
+          backgroundColor: calculateAnnotationBackground(timestampMs, config.colorScheme),
+          margin: `0 ${COLUMN_MARGIN_RIGHT_CH}ch 0 0`,
+          width: annotationWidth,
+          textDecoration: `none; padding: 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch; border-left: 3px solid ${calculateAnnotationBorder(
+            timestampMs,
+            config.colorScheme
+          )};`
+        }
+      }
     };
   }
 
@@ -233,90 +228,116 @@ export class DecoratorManager implements vscode.Disposable {
     this.skipMessages.set(documentKey, reason);
     void vscode.window.setStatusBarMessage(`Easy Git: ${reason}`, 5000);
   }
-
-  private applyBackgroundDecorations(
-    editor: vscode.TextEditor,
-    backgroundBuckets: Map<string, vscode.Range[]>
-  ): void {
-    const nextKeys = new Set<string>();
-
-    for (const [color, ranges] of backgroundBuckets) {
-      const decorationType = this.getBackgroundDecorationType(color);
-      editor.setDecorations(decorationType, ranges);
-      nextKeys.add(color);
-    }
-
-    const previousKeys = this.appliedBackgroundKeys.get(editor) ?? new Set<string>();
-    for (const color of previousKeys) {
-      if (!nextKeys.has(color)) {
-        editor.setDecorations(this.getBackgroundDecorationType(color), []);
-      }
-    }
-
-    this.appliedBackgroundKeys.set(editor, nextKeys);
-  }
-
-  private getBackgroundDecorationType(color: string): vscode.TextEditorDecorationType {
-    let decorationType = this.backgroundDecorationTypes.get(color);
-    if (!decorationType) {
-      decorationType = vscode.window.createTextEditorDecorationType({
-        isWholeLine: true,
-        rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
-        backgroundColor: color
-      });
-      this.backgroundDecorationTypes.set(color, decorationType);
-    }
-
-    return decorationType;
-  }
 }
 
-function getDecorationRange(textLine: vscode.TextLine): vscode.Range | undefined {
-  if (textLine.text.length > 0) {
-    return new vscode.Range(textLine.range.start, textLine.range.start.translate(0, 1));
-  }
-
-  if (!textLine.rangeIncludingLineBreak.isEmpty) {
-    return textLine.rangeIncludingLineBreak;
-  }
-
-  return undefined;
+function getAnnotationRange(textLine: vscode.TextLine): vscode.Range {
+  return new vscode.Range(textLine.range.start, textLine.range.start);
 }
 
-function buildHoverMessage(documentUri: vscode.Uri, line: BlameLineInfo): vscode.MarkdownString {
+function buildAnnotationText(
+  line: BlameLineInfo,
+  timestampMs: number,
+  config: EasyGitConfig,
+  locale: string
+): string {
+  const dateText = formatCompactTimestamp(timestampMs, config.dateFormat, locale);
+  const authorText = truncateAuthor(line.author);
+  return `${dateText}  ${authorText}`;
+}
+
+function buildUncommittedAnnotationText(
+  config: EasyGitConfig,
+  locale: string,
+  language: ReturnType<typeof resolveDisplayLanguage>
+): string {
+  const dateText = formatCompactTimestamp(Date.now(), config.dateFormat, locale);
+  return `${dateText}  ${t(language, "annotation.uncommitted")}`;
+}
+
+function buildHoverMessage(
+  documentUri: vscode.Uri,
+  line: BlameLineInfo,
+  language: ReturnType<typeof resolveDisplayLanguage>
+): vscode.MarkdownString {
   const markdown = new vscode.MarkdownString(undefined, true);
   markdown.isTrusted = true;
-  markdown.appendMarkdown(`**提交者**：${escapeMarkdown(line.author)} ${escapeMarkdown(line.authorMail)}  \n`);
-  markdown.appendMarkdown(`**提交时间**：${formatFullDateTime(line.authorTime * 1000)}  \n`);
-  markdown.appendMarkdown(`**提交哈希**：\`${line.shortCommitHash}\`  \n`);
-  markdown.appendMarkdown(`**提交信息**：${escapeMarkdown(line.summary || "(无提交标题)")}  \n`);
+  markdown.appendMarkdown(
+    `**${t(language, "hover.author")}**: ${escapeMarkdown(line.author)} ${escapeMarkdown(line.authorMail)}  \n`
+  );
+  markdown.appendMarkdown(`**${t(language, "hover.time")}**: ${formatFullDateTime(line.authorTime * 1000)}  \n`);
+  markdown.appendMarkdown(`**${t(language, "hover.hash")}**: \`${line.shortCommitHash}\`  \n`);
+  markdown.appendMarkdown(
+    `**${t(language, "hover.summary")}**: ${escapeMarkdown(line.summary || t(language, "hover.noSummary"))}  \n`
+  );
 
   if (!line.isUncommitted) {
     const commandArgs = encodeURIComponent(JSON.stringify([documentUri.toString(), line.commitHash]));
     markdown.appendMarkdown(
-      `[查看提交详情](command:${COMMAND_OPEN_COMMIT_DETAILS}?${commandArgs})`
+      `[${t(language, "hover.viewDetails")}](command:${COMMAND_OPEN_COMMIT_DETAILS}?${commandArgs})`
     );
   } else {
-    markdown.appendMarkdown("_尚未提交的修改_");
+    markdown.appendMarkdown(`_${t(language, "hover.uncommitted")}_`);
   }
 
   return markdown;
 }
 
-function getAuthorAbbreviation(author: string): string {
+function truncateAuthor(author: string): string {
   const trimmed = author.trim();
   if (!trimmed) {
-    return "??";
+    return "未知作者";
   }
 
-  const segments = trimmed.split(/[\s_-]+/).filter(Boolean);
-  if (segments.length >= 2) {
-    return `${segments[0][0]}${segments[segments.length - 1][0]}`.toUpperCase();
-  }
-
-  return trimmed.slice(0, 2).toUpperCase();
+  return trimmed.length > 14 ? `${trimmed.slice(0, 13)}…` : trimmed;
 }
 
 function escapeMarkdown(value: string): string {
   return value.replace(/([\\`*_{}[\]()#+\-.!])/g, "\\$1");
+}
+
+function calculateAnnotationWidth(
+  lines: BlameLineInfo[],
+  config: EasyGitConfig,
+  locale: string,
+  language: ReturnType<typeof resolveDisplayLanguage>
+): string {
+  let maxTextWidth = 0;
+
+  for (const line of lines) {
+    const text = line.isUncommitted
+      ? buildUncommittedAnnotationText(config, locale, language)
+      : buildAnnotationText(line, line.authorTime * 1000, config, locale);
+    maxTextWidth = Math.max(maxTextWidth, getVisualWidth(text));
+  }
+
+  const finalWidth = clamp(maxTextWidth, 0, config.maxAnnotationWidth);
+  return `${finalWidth.toFixed(1)}ch`;
+}
+
+function getVisualWidth(value: string): number {
+  let width = 0;
+
+  for (const char of value) {
+    width += isWideCharacter(char) ? 2 : 1;
+  }
+
+  return width;
+}
+
+function isWideCharacter(char: string): boolean {
+  const codePoint = char.codePointAt(0) ?? 0;
+  return (
+    (codePoint >= 0x1100 && codePoint <= 0x115f) ||
+    (codePoint >= 0x2e80 && codePoint <= 0xa4cf) ||
+    (codePoint >= 0xac00 && codePoint <= 0xd7a3) ||
+    (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
+    (codePoint >= 0xfe10 && codePoint <= 0xfe19) ||
+    (codePoint >= 0xfe30 && codePoint <= 0xfe6f) ||
+    (codePoint >= 0xff00 && codePoint <= 0xff60) ||
+    (codePoint >= 0xffe0 && codePoint <= 0xffe6)
+  );
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

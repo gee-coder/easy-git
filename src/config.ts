@@ -15,9 +15,12 @@ export function getExtensionConfig(): EasyGitConfig {
   return {
     enabled: configuration.get<boolean>("enabled", false),
     colorScheme: configuration.get<EasyGitConfig["colorScheme"]>("colorScheme", "blue"),
-    dateFormat: configuration.get<EasyGitConfig["dateFormat"]>("dateFormat", "relative"),
+    dateFormat: configuration.get<EasyGitConfig["dateFormat"]>("dateFormat", "absolute"),
     maxLineCount: configuration.get<number>("maxLineCount", 5000),
-    cacheTimeout: configuration.get<number>("cacheTimeout", 60_000)
+    cacheTimeout: configuration.get<number>("cacheTimeout", 60_000),
+    maxAnnotationWidth: configuration.get<number>("maxAnnotationWidth", 22),
+    uncommittedColor: configuration.get<string>("uncommittedColor", "46,160,67"),
+    language: configuration.get<EasyGitConfig["language"]>("language", "auto")
   };
 }
 

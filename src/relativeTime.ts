@@ -13,7 +13,7 @@ export function formatCompactTimestamp(
   now = Date.now()
 ): string {
   if (dateFormat === "absolute") {
-    return formatAbsoluteDate(timestampMs);
+    return formatAnnotationDate(timestampMs);
   }
 
   return formatRelativeTime(timestampMs, locale, now);
@@ -60,9 +60,9 @@ export function formatFullDateTime(timestampMs: number): string {
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
 
-function formatAbsoluteDate(timestampMs: number): string {
+export function formatAnnotationDate(timestampMs: number): string {
   const date = new Date(timestampMs);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
 }
 
 function formatMonthDay(timestampMs: number): string {

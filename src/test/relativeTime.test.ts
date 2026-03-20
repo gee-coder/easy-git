@@ -21,7 +21,7 @@ test("formatCompactTimestamp falls back to month-day after one month", () => {
 
 test("formatCompactTimestamp supports absolute dates", () => {
   const result = formatCompactTimestamp(new Date("2026-03-01T00:00:00Z").getTime(), "absolute", "zh-CN", NOW);
-  assert.equal(result, "2026-03-01");
+  assert.equal(result, "2026/3/1");
 });
 
 test("formatFullDateTime returns a stable YYYY-MM-DD HH:mm:ss string", () => {

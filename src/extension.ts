@@ -12,6 +12,7 @@ import {
 } from "./config";
 import { DecoratorManager } from "./decoratorManager";
 import { GitService } from "./gitService";
+import { resolveDisplayLanguage, t } from "./i18n";
 
 export function activate(context: vscode.ExtensionContext): void {
   const outputChannel = vscode.window.createOutputChannel("Easy Git");
@@ -42,14 +43,15 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   registerCommand(COMMAND_OPEN_COMMIT_DETAILS, async (...args: unknown[]) => {
+    const language = getResolvedLanguage();
     const resolution = resolveCommitRequest(args, decoratorManager);
     if (!resolution) {
-      void vscode.window.showInformationMessage("当前光标所在行暂无可查看的提交信息。");
+      void vscode.window.showInformationMessage(t(language, "message.noCommitInfo"));
       return;
     }
 
     if (resolution.commitHash === "0000000000000000000000000000000000000000") {
-      void vscode.window.showInformationMessage("当前行为未提交的修改，暂时没有提交详情。");
+      void vscode.window.showInformationMessage(t(language, "message.uncommittedNoDetails"));
       return;
     }
 
@@ -62,7 +64,7 @@ export function activate(context: vscode.ExtensionContext): void {
       outputChannel.show(true);
     } catch (error) {
       void vscode.window.showErrorMessage(
-        error instanceof Error ? error.message : "读取提交详情失败。"
+        error instanceof Error ? error.message : t(language, "message.readCommitFailed")
       );
     }
   });
@@ -157,4 +159,10 @@ function toUri(value: unknown): vscode.Uri | undefined {
   }
 
   return undefined;
+}
+
+function getResolvedLanguage(): ReturnType<typeof resolveDisplayLanguage> {
+  const config = getExtensionConfig();
+  const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
+  return resolveDisplayLanguage(config.language, locale);
 }
