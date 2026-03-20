@@ -68,6 +68,26 @@ export function calculateUncommittedAnnotationBorder(colorValue: string): string
   return toRgbString(lighten(parseConfigColor(colorValue), 0.12));
 }
 
+export function calculateCurrentAuthorAnnotationBackground(
+  timestampMs: number,
+  colorValue: string,
+  now = Date.now()
+): string {
+  return toRgbString(getConfiguredBackgroundColor(getAgeBucketIndex(timestampMs, now), colorValue));
+}
+
+export function calculateCurrentAuthorAnnotationColor(timestampMs: number, _colorValue: string, now = Date.now()): string {
+  return toRgbString(TEXT_PALETTE[getAgeBucketIndex(timestampMs, now)]);
+}
+
+export function calculateCurrentAuthorAnnotationBorder(
+  timestampMs: number,
+  colorValue: string,
+  now = Date.now()
+): string {
+  return toRgbString(lighten(getConfiguredBackgroundColor(getAgeBucketIndex(timestampMs, now), colorValue), 0.18));
+}
+
 export function getAgeProgress(timestampMs: number, now = Date.now()): number {
   return getAgeBucketIndex(timestampMs, now) / (BLUE_BACKGROUND_PALETTE.length - 1);
 }
@@ -92,6 +112,10 @@ function getBackgroundColor(index: number, colorScheme: ColorScheme): Rgb {
   return retintBlueSwatch(BLUE_BACKGROUND_PALETTE[index], colorScheme);
 }
 
+function getConfiguredBackgroundColor(index: number, colorValue: string): Rgb {
+  return retintFromConfiguredColor(BLUE_BACKGROUND_PALETTE[index], parseConfigColor(colorValue));
+}
+
 function retintBlueSwatch(reference: Rgb, colorScheme: Exclude<ColorScheme, "blue">): Rgb {
   const hue = colorScheme === "green" ? 152 : 268;
   const [refHue, refSaturation, refLightness] = rgbToHsl(reference);
@@ -99,6 +123,13 @@ function retintBlueSwatch(reference: Rgb, colorScheme: Exclude<ColorScheme, "blu
   const shiftedHue = normalizeHue(refHue + (hue - BLUE_HUE_DEGREES));
   const nextSaturation = clamp(refSaturation * saturationBoost, 0.16, 0.72);
   return hslToRgb(shiftedHue, nextSaturation, refLightness);
+}
+
+function retintFromConfiguredColor(reference: Rgb, configuredColor: Rgb): Rgb {
+  const [configuredHue, configuredSaturation] = rgbToHsl(configuredColor);
+  const [, referenceSaturation, referenceLightness] = rgbToHsl(reference);
+  const nextSaturation = clamp(configuredSaturation * 0.72 + referenceSaturation * 0.28, 0.18, 0.8);
+  return hslToRgb(configuredHue, nextSaturation, referenceLightness);
 }
 
 function lighten([red, green, blue]: Rgb, amount: number): Rgb {

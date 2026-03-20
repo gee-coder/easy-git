@@ -20,6 +20,7 @@ export function getExtensionConfig(): EasyGitConfig {
     cacheTimeout: configuration.get<number>("cacheTimeout", 60_000),
     maxAnnotationWidth: configuration.get<number>("maxAnnotationWidth", 22),
     uncommittedColor: configuration.get<string>("uncommittedColor", "46,160,67"),
+    currentAuthorColor: configuration.get<string>("currentAuthorColor", ""),
     language: configuration.get<EasyGitConfig["language"]>("language", "auto")
   };
 }

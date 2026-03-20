@@ -1,0 +1,17 @@
+{
+  "extension.description": "GitBlms 为 VS Code 带来 GoLand 风格的 Git 追溯注解体验，支持时间色阶、未提交高亮和中英文界面。",
+  "command.toggleBlame.title": "切换行内追溯注解",
+  "command.showBlame.title": "显示行内追溯注解",
+  "command.hideBlame.title": "隐藏行内追溯注解",
+  "command.openCommitDetails.title": "查看当前行提交详情",
+  "configuration.title": "GitBlms",
+  "config.enabled.description": "全局启用或关闭行内 Git 追溯注解。",
+  "config.colorScheme.description": "注解主色调，可选 blue、green、purple。",
+  "config.dateFormat.description": "时间显示格式，可选 relative 或 absolute。",
+  "config.maxLineCount.description": "超过该行数的文件会跳过 blame 渲染以保护性能。",
+  "config.cacheTimeout.description": "blame 结果缓存时长，单位毫秒。",
+  "config.maxAnnotationWidth.description": "左侧 blame 信息栏最大宽度，单位 ch。",
+  "config.uncommittedColor.description": "未提交代码颜色，支持 46,160,67、rgb(46,160,67) 或 #2ea043。",
+  "config.currentAuthorColor.description": "当前 Git 用户提交代码的高亮色。留空表示关闭。支持 46,160,67、rgb(46,160,67) 或 #2ea043。",
+  "config.language.description": "扩展显示语言，可选 auto、zh-CN、en。"
+}

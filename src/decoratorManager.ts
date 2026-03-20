@@ -1,3 +1,4 @@
+import { isCurrentAuthorLine } from "./authorIdentity";
 import * as vscode from "vscode";
 import { BlameManager } from "./blameManager";
 import { COMMAND_OPEN_COMMIT_DETAILS, getExtensionConfig } from "./config";
@@ -5,13 +6,16 @@ import {
   calculateAnnotationBackground,
   calculateAnnotationBorder,
   calculateAnnotationColor,
+  calculateCurrentAuthorAnnotationBackground,
+  calculateCurrentAuthorAnnotationBorder,
+  calculateCurrentAuthorAnnotationColor,
   calculateUncommittedAnnotationBackground,
   calculateUncommittedAnnotationBorder,
   calculateUncommittedAnnotationColor
 } from "./colorCalculator";
 import { resolveDisplayLanguage, t } from "./i18n";
 import { formatCompactTimestamp, formatFullDateTime } from "./relativeTime";
-import type { BlameLineInfo, EasyGitConfig } from "./types";
+import type { BlameLineInfo, EasyGitConfig, GitAuthorIdentity } from "./types";
 
 const REFRESH_DELAY_MS = 250;
 const COLUMN_HORIZONTAL_PADDING_CH = 0.45;
@@ -74,7 +78,15 @@ export class DecoratorManager implements vscode.Disposable {
 
     const annotationOptions = lookup.blame.lines
       .map((line) =>
-        this.createDecorationOption(editor.document, line, config, locale, language, annotationWidth)
+        this.createDecorationOption(
+          editor.document,
+          line,
+          config,
+          locale,
+          language,
+          annotationWidth,
+          lookup.blame.currentAuthor
+        )
       )
       .filter((value): value is vscode.DecorationOptions => value !== undefined);
 
@@ -160,7 +172,8 @@ export class DecoratorManager implements vscode.Disposable {
     config: EasyGitConfig,
     locale: string,
     language: ReturnType<typeof resolveDisplayLanguage>,
-    annotationWidth: string
+    annotationWidth: string,
+    currentAuthor?: GitAuthorIdentity
   ): vscode.DecorationOptions | undefined {
     if (line.lineNumber >= document.lineCount) {
       return undefined;
@@ -188,20 +201,30 @@ export class DecoratorManager implements vscode.Disposable {
       };
     }
 
+    const isCurrentAuthor = Boolean(
+      config.currentAuthorColor.trim() && isCurrentAuthorLine(line, currentAuthor)
+    );
+    const annotationColor = isCurrentAuthor
+      ? calculateCurrentAuthorAnnotationColor(timestampMs, config.currentAuthorColor)
+      : calculateAnnotationColor(timestampMs, config.colorScheme);
+    const annotationBackground = isCurrentAuthor
+      ? calculateCurrentAuthorAnnotationBackground(timestampMs, config.currentAuthorColor)
+      : calculateAnnotationBackground(timestampMs, config.colorScheme);
+    const annotationBorder = isCurrentAuthor
+      ? calculateCurrentAuthorAnnotationBorder(timestampMs, config.currentAuthorColor)
+      : calculateAnnotationBorder(timestampMs, config.colorScheme);
+
     return {
       range,
       hoverMessage: buildHoverMessage(document.uri, line, language),
       renderOptions: {
         before: {
-          contentText: buildAnnotationText(line, timestampMs, config, locale),
-          color: calculateAnnotationColor(timestampMs, config.colorScheme),
-          backgroundColor: calculateAnnotationBackground(timestampMs, config.colorScheme),
+          contentText: buildAnnotationText(line, timestampMs, config, locale, language),
+          color: annotationColor,
+          backgroundColor: annotationBackground,
           margin: `0 ${COLUMN_MARGIN_RIGHT_CH}ch 0 0`,
           width: annotationWidth,
-          textDecoration: `none; padding: 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch; border-left: 3px solid ${calculateAnnotationBorder(
-            timestampMs,
-            config.colorScheme
-          )};`
+          textDecoration: `none; padding: 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch; border-left: 3px solid ${annotationBorder};`
         }
       }
     };
@@ -226,7 +249,7 @@ export class DecoratorManager implements vscode.Disposable {
     }
 
     this.skipMessages.set(documentKey, reason);
-    void vscode.window.setStatusBarMessage(`Easy Git: ${reason}`, 5000);
+    void vscode.window.setStatusBarMessage(`GitBlms: ${reason}`, 5000);
   }
 }
 
@@ -238,10 +261,11 @@ function buildAnnotationText(
   line: BlameLineInfo,
   timestampMs: number,
   config: EasyGitConfig,
-  locale: string
+  locale: string,
+  language: ReturnType<typeof resolveDisplayLanguage>
 ): string {
   const dateText = formatCompactTimestamp(timestampMs, config.dateFormat, locale);
-  const authorText = truncateAuthor(line.author);
+  const authorText = truncateAuthor(line.author, language);
   return `${dateText}  ${authorText}`;
 }
 
@@ -282,10 +306,10 @@ function buildHoverMessage(
   return markdown;
 }
 
-function truncateAuthor(author: string): string {
+function truncateAuthor(author: string, language: ReturnType<typeof resolveDisplayLanguage>): string {
   const trimmed = author.trim();
   if (!trimmed) {
-    return "未知作者";
+    return t(language, "annotation.unknownAuthor");
   }
 
   return trimmed.length > 14 ? `${trimmed.slice(0, 13)}…` : trimmed;
@@ -306,7 +330,7 @@ function calculateAnnotationWidth(
   for (const line of lines) {
     const text = line.isUncommitted
       ? buildUncommittedAnnotationText(config, locale, language)
-      : buildAnnotationText(line, line.authorTime * 1000, config, locale);
+      : buildAnnotationText(line, line.authorTime * 1000, config, locale, language);
     maxTextWidth = Math.max(maxTextWidth, getVisualWidth(text));
   }
 

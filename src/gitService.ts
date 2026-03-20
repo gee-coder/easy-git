@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import * as path from "node:path";
-import type { BlameLineInfo, BlameResult } from "./types";
+import type { ResolvedLanguage } from "./i18n";
+import type { BlameLineInfo, BlameResult, GitAuthorIdentity } from "./types";
 
 interface GitCommandResult {
   stdout: string;
@@ -14,6 +15,7 @@ interface GetBlameOptions {
 
 export class GitService {
   private readonly repoRootCache = new Map<string, Promise<string | undefined>>();
+  private readonly currentAuthorCache = new Map<string, Promise<GitAuthorIdentity | undefined>>();
 
   async resolveRepoRoot(filePath: string): Promise<string | undefined> {
     const directory = path.dirname(filePath);
@@ -45,21 +47,29 @@ export class GitService {
       args.push("--", relativePath);
     }
 
-    const { stdout } = await this.runGitCommand(args, repoRoot, options.contents);
+    const [commandResult, currentAuthor] = await Promise.all([
+      this.runGitCommand(args, repoRoot, options.contents),
+      this.getCurrentAuthorForRepo(repoRoot)
+    ]);
 
     return {
       repoRoot,
       filePath,
-      lines: parseBlamePorcelain(stdout),
+      lines: parseBlamePorcelain(commandResult.stdout),
       generatedAt: Date.now(),
-      fromDirtyContent: options.contents !== undefined
+      fromDirtyContent: options.contents !== undefined,
+      currentAuthor
     };
   }
 
-  async getCommitDetails(filePath: string, commitHash: string): Promise<string> {
+  async getCommitDetails(filePath: string, commitHash: string, language: ResolvedLanguage = "en"): Promise<string> {
     const repoRoot = await this.resolveRepoRoot(filePath);
     if (!repoRoot) {
-      throw new Error("当前文件不在 Git 仓库中。");
+      throw new Error(
+        language === "zh-CN"
+          ? "当前文件不在 Git 仓库中。"
+          : "The current file is not inside a Git repository."
+      );
     }
 
     const { stdout } = await this.runGitCommand(
@@ -72,6 +82,28 @@ export class GitService {
 
   clearCaches(): void {
     this.repoRootCache.clear();
+    this.currentAuthorCache.clear();
+  }
+
+  private async getCurrentAuthorForRepo(repoRoot: string): Promise<GitAuthorIdentity | undefined> {
+    const cached = this.currentAuthorCache.get(repoRoot);
+    if (cached) {
+      return cached;
+    }
+
+    const pending = Promise.all([
+      this.readGitConfigValue(repoRoot, "user.name"),
+      this.readGitConfigValue(repoRoot, "user.email")
+    ]).then(([name, email]) => {
+      if (!name && !email) {
+        return undefined;
+      }
+
+      return { name, email };
+    });
+
+    this.currentAuthorCache.set(repoRoot, pending);
+    return pending;
   }
 
   private runGitCommand(args: string[], cwd: string, stdinText?: string): Promise<GitCommandResult> {
@@ -115,6 +147,16 @@ export class GitService {
 
       child.stdin.end();
     });
+  }
+
+  private async readGitConfigValue(cwd: string, key: string): Promise<string | undefined> {
+    try {
+      const { stdout } = await this.runGitCommand(["config", "--get", key], cwd);
+      const value = stdout.trim();
+      return value || undefined;
+    } catch {
+      return undefined;
+    }
   }
 }
 

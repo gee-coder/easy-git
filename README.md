@@ -6,8 +6,8 @@ GitBlms is a VS Code extension that brings a GoLand-style inline Git blame exper
 
 ## Home
 
-- Repository: [https://github.com/gee-coder/easy-git.git](https://github.com/gee-coder/easy-git.git)
-- Issues: [https://github.com/gee-coder/easy-git/issues](https://github.com/gee-coder/easy-git/issues)
+- Repository: [https://github.com/gee-coder/git-blms.git](https://github.com/gee-coder/git-blms.git)
+- Issues: [https://github.com/gee-coder/git-blms/issues](https://github.com/gee-coder/git-blms/issues)
 
 ## 1.0.0 Highlights
 
@@ -16,6 +16,7 @@ GitBlms is a VS Code extension that brings a GoLand-style inline Git blame exper
 - Hover details for author, commit time, hash, and summary
 - `git blame --contents -` support for unsaved editor content
 - Dedicated configurable style for uncommitted lines
+- Optional current-author highlight color that keeps age buckets but uses your own accent palette
 - Built-in Chinese and English runtime text, plus a custom extension icon
 
 ## Preview
@@ -59,6 +60,7 @@ Default keybinding:
 | `easy-git.cacheTimeout` | `60000` | Blame cache lifetime in milliseconds |
 | `easy-git.maxAnnotationWidth` | `22` | Maximum width of the blame column in `ch` |
 | `easy-git.uncommittedColor` | `"46,160,67"` | Color for uncommitted lines. Supports CSV, `rgb(...)`, and hex |
+| `easy-git.currentAuthorColor` | `""` | Optional highlight color for lines authored by the current Git user. Keeps age buckets and leaves the feature disabled when empty |
 | `easy-git.language` | `"auto"` | UI language: `auto`, `zh-CN`, `en` |
 
 ## Notes

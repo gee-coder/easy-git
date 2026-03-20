@@ -4,6 +4,9 @@ import {
   calculateAnnotationBackground,
   calculateAnnotationColor,
   calculateAnnotationBorder,
+  calculateCurrentAuthorAnnotationBackground,
+  calculateCurrentAuthorAnnotationBorder,
+  calculateCurrentAuthorAnnotationColor,
   calculateUncommittedAnnotationBackground,
   calculateUncommittedAnnotationBorder,
   calculateUncommittedAnnotationColor,
@@ -43,4 +46,22 @@ test("uncommitted annotation color accepts csv and css-like inputs", () => {
   assert.equal(calculateUncommittedAnnotationColor("#2ea043"), "rgb(46, 160, 67)");
   assert.equal(calculateUncommittedAnnotationBackground("46,160,67"), "rgba(46, 160, 67, 0.18)");
   assert.equal(calculateUncommittedAnnotationBorder("46,160,67"), "rgb(71, 171, 90)");
+});
+
+test("current-author palette keeps age buckets while following configured hue", () => {
+  const recentBackground = calculateCurrentAuthorAnnotationBackground(NOW - 2 * 60 * 60 * 1000, "#d97706", NOW);
+  const olderBackground = calculateCurrentAuthorAnnotationBackground(
+    NOW - 5 * 365 * 24 * 60 * 60 * 1000,
+    "#d97706",
+    NOW
+  );
+  const border = calculateCurrentAuthorAnnotationBorder(NOW - 2 * 60 * 60 * 1000, "#d97706", NOW);
+  const text = calculateCurrentAuthorAnnotationColor(NOW - 2 * 60 * 60 * 1000, "#d97706", NOW);
+
+  assert.match(recentBackground, /^rgb\(\d+, \d+, \d+\)$/);
+  assert.match(olderBackground, /^rgb\(\d+, \d+, \d+\)$/);
+  assert.match(border, /^rgb\(\d+, \d+, \d+\)$/);
+  assert.equal(text, "rgb(206, 208, 214)");
+  assert.notEqual(recentBackground, olderBackground);
+  assert.notEqual(recentBackground, calculateAnnotationBackground(NOW - 2 * 60 * 60 * 1000, "blue", NOW));
 });

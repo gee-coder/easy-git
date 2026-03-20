@@ -1,17 +1,17 @@
 {
   "name": "easy-git",
   "displayName": "GitBlms",
-  "description": "GitBlms brings GoLand-style inline Git blame to VS Code, with age buckets, uncommitted highlighting, and bilingual UI / GitBlms 为 VS Code 带来 GoLand 风格的 Git 追溯注解体验，支持时间色阶、未提交高亮和中英文界面。",
+  "description": "%extension.description%",
   "version": "1.0.0",
   "publisher": "gee-coder",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gee-coder/easy-git.git"
+    "url": "https://github.com/gee-coder/git-blms.git"
   },
-  "homepage": "https://github.com/gee-coder/easy-git.git",
+  "homepage": "https://github.com/gee-coder/git-blms.git",
   "bugs": {
-    "url": "https://github.com/gee-coder/easy-git/issues"
+    "url": "https://github.com/gee-coder/git-blms/issues"
   },
   "engines": {
     "vscode": "^1.80.0"
@@ -46,22 +46,22 @@
     "commands": [
       {
         "command": "easy-git.toggleBlame",
-        "title": "Toggle Inline Git Blame / 切换行内追溯注解",
+        "title": "%command.toggleBlame.title%",
         "category": "Git"
       },
       {
         "command": "easy-git.showBlame",
-        "title": "Show Inline Git Blame / 显示行内追溯注解",
+        "title": "%command.showBlame.title%",
         "category": "Git"
       },
       {
         "command": "easy-git.hideBlame",
-        "title": "Hide Inline Git Blame / 隐藏行内追溯注解",
+        "title": "%command.hideBlame.title%",
         "category": "Git"
       },
       {
         "command": "easy-git.openCommitDetails",
-        "title": "Open Commit Details / 查看当前行提交详情",
+        "title": "%command.openCommitDetails.title%",
         "category": "Git"
       }
     ],
@@ -105,12 +105,12 @@
       ]
     },
     "configuration": {
-      "title": "GitBlms",
+      "title": "%configuration.title%",
       "properties": {
         "easy-git.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable or disable inline Git blame annotations globally / 全局启用或关闭行内 Git 追溯注解。"
+          "description": "%config.enabled.description%"
         },
         "easy-git.colorScheme": {
           "type": "string",
@@ -120,7 +120,7 @@
             "green",
             "purple"
           ],
-          "description": "Primary annotation palette: blue, green, or purple / 注解主色调，可选 blue、green、purple。"
+          "description": "%config.colorScheme.description%"
         },
         "easy-git.dateFormat": {
           "type": "string",
@@ -129,30 +129,35 @@
             "relative",
             "absolute"
           ],
-          "description": "Timestamp display format: relative or absolute / 时间显示格式，可选 relative 或 absolute。"
+          "description": "%config.dateFormat.description%"
         },
         "easy-git.maxLineCount": {
           "type": "number",
           "default": 5000,
           "minimum": 1,
-          "description": "Skip blame rendering for files over this line count / 超过该行数的文件会跳过 blame 渲染以保护性能。"
+          "description": "%config.maxLineCount.description%"
         },
         "easy-git.cacheTimeout": {
           "type": "number",
           "default": 60000,
           "minimum": 0,
-          "description": "Blame cache lifetime in milliseconds / blame 结果缓存时长，单位毫秒。"
+          "description": "%config.cacheTimeout.description%"
         },
         "easy-git.maxAnnotationWidth": {
           "type": "number",
           "default": 22,
           "minimum": 8,
-          "description": "Maximum width of the left blame column in ch units / 左侧 blame 信息栏最大宽度，单位 ch。"
+          "description": "%config.maxAnnotationWidth.description%"
         },
         "easy-git.uncommittedColor": {
           "type": "string",
           "default": "46,160,67",
-          "description": "Color used for uncommitted lines. Supports 46,160,67, rgb(46,160,67), or #2ea043 / 未提交代码颜色，支持 46,160,67、rgb(46,160,67) 或 #2ea043。"
+          "description": "%config.uncommittedColor.description%"
+        },
+        "easy-git.currentAuthorColor": {
+          "type": "string",
+          "default": "",
+          "description": "%config.currentAuthorColor.description%"
         },
         "easy-git.language": {
           "type": "string",
@@ -162,7 +167,7 @@
             "zh-CN",
             "en"
           ],
-          "description": "Extension display language: auto, zh-CN, or en / 扩展显示语言，可选 auto、zh-CN、en。"
+          "description": "%config.language.description%"
         }
       }
     }

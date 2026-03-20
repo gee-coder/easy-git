@@ -10,7 +10,13 @@ export interface EasyGitConfig {
   cacheTimeout: number;
   maxAnnotationWidth: number;
   uncommittedColor: string;
+  currentAuthorColor: string;
   language: DisplayLanguage;
+}
+
+export interface GitAuthorIdentity {
+  name?: string;
+  email?: string;
 }
 
 export interface BlameLineInfo {
@@ -30,6 +36,7 @@ export interface BlameResult {
   lines: BlameLineInfo[];
   generatedAt: number;
   fromDirtyContent: boolean;
+  currentAuthor?: GitAuthorIdentity;
 }
 
 export type BlameLookupResult =

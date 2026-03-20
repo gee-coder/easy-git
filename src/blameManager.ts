@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as vscode from "vscode";
 import { GitService } from "./gitService";
+import { formatTooLargeSkipReason, resolveDisplayLanguage, t } from "./i18n";
 import type { BlameLookupResult, BlameResult, EasyGitConfig } from "./types";
 
 interface CacheEntry {
@@ -15,11 +16,14 @@ export class BlameManager {
   constructor(private readonly gitService: GitService) {}
 
   async getBlame(document: vscode.TextDocument, config: EasyGitConfig): Promise<BlameLookupResult> {
+    const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
+    const language = resolveDisplayLanguage(config.language, locale);
+
     if (document.uri.scheme !== "file") {
       return {
         kind: "skip",
         code: "not-file",
-        reason: "Easy Git 只支持本地磁盘上的文件。"
+        reason: t(language, "skip.notFile")
       };
     }
 
@@ -27,7 +31,7 @@ export class BlameManager {
       return {
         kind: "skip",
         code: "too-large",
-        reason: `当前文件共有 ${document.lineCount} 行，已超过 easy-git.maxLineCount (${config.maxLineCount})。`
+        reason: formatTooLargeSkipReason(language, document.lineCount, config.maxLineCount)
       };
     }
 
@@ -42,7 +46,7 @@ export class BlameManager {
       return pending;
     }
 
-    const promise = this.loadBlame(document, config, cacheKey).finally(() => {
+    const promise = this.loadBlame(document, config, cacheKey, language).finally(() => {
       this.inflight.delete(cacheKey);
     });
 
@@ -68,7 +72,8 @@ export class BlameManager {
   private async loadBlame(
     document: vscode.TextDocument,
     config: EasyGitConfig,
-    cacheKey: string
+    cacheKey: string,
+    language: ReturnType<typeof resolveDisplayLanguage>
   ): Promise<BlameLookupResult> {
     try {
       const blame = await this.gitService.getBlame(document.uri.fsPath, {
@@ -79,7 +84,7 @@ export class BlameManager {
         return {
           kind: "skip",
           code: "not-in-repo",
-          reason: "当前文件不在 Git 仓库中。"
+          reason: t(language, "skip.notInRepo")
         };
       }
 
@@ -96,7 +101,7 @@ export class BlameManager {
       return {
         kind: "skip",
         code: "git-error",
-        reason: error instanceof Error ? error.message : "读取 Git blame 失败。"
+        reason: error instanceof Error ? error.message : t(language, "skip.readBlameFailed")
       };
     }
   }

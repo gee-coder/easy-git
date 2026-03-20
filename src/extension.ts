@@ -15,7 +15,7 @@ import { GitService } from "./gitService";
 import { resolveDisplayLanguage, t } from "./i18n";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const outputChannel = vscode.window.createOutputChannel("Easy Git");
+  const outputChannel = vscode.window.createOutputChannel("GitBlms");
   const gitService = new GitService();
   const blameManager = new BlameManager(gitService);
   const decoratorManager = new DecoratorManager(blameManager);
@@ -56,7 +56,11 @@ export function activate(context: vscode.ExtensionContext): void {
     }
 
     try {
-      const details = await gitService.getCommitDetails(resolution.filePath, resolution.commitHash);
+      const details = await gitService.getCommitDetails(
+        resolution.filePath,
+        resolution.commitHash,
+        language
+      );
       outputChannel.clear();
       outputChannel.appendLine(`# ${resolution.commitHash.slice(0, 7)}`);
       outputChannel.appendLine("");

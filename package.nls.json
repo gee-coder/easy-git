@@ -1,0 +1,17 @@
+{
+  "extension.description": "GitBlms brings GoLand-style inline Git blame to VS Code, with age buckets, uncommitted highlighting, and bilingual UI.",
+  "command.toggleBlame.title": "Toggle Inline Git Blame",
+  "command.showBlame.title": "Show Inline Git Blame",
+  "command.hideBlame.title": "Hide Inline Git Blame",
+  "command.openCommitDetails.title": "Open Commit Details",
+  "configuration.title": "GitBlms",
+  "config.enabled.description": "Enable or disable inline Git blame annotations globally.",
+  "config.colorScheme.description": "Primary annotation palette: blue, green, or purple.",
+  "config.dateFormat.description": "Timestamp display format: relative or absolute.",
+  "config.maxLineCount.description": "Skip blame rendering for files over this line count.",
+  "config.cacheTimeout.description": "Blame cache lifetime in milliseconds.",
+  "config.maxAnnotationWidth.description": "Maximum width of the left blame column in ch units.",
+  "config.uncommittedColor.description": "Color used for uncommitted lines. Supports 46,160,67, rgb(46,160,67), or #2ea043.",
+  "config.currentAuthorColor.description": "Optional highlight color for lines authored by the current Git user. Leave empty to disable. Supports 46,160,67, rgb(46,160,67), or #2ea043.",
+  "config.language.description": "Extension display language: auto, zh-CN, or en."
+}

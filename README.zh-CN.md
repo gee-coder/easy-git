@@ -6,8 +6,8 @@ GitBlms 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 
 
 ## 主页
 
-- 仓库主页: [https://github.com/gee-coder/easy-git.git](https://github.com/gee-coder/easy-git.git)
-- 问题反馈: [https://github.com/gee-coder/easy-git/issues](https://github.com/gee-coder/easy-git/issues)
+- 仓库主页: [https://github.com/gee-coder/git-blms.git](https://github.com/gee-coder/git-blms.git)
+- 问题反馈: [https://github.com/gee-coder/git-blms/issues](https://github.com/gee-coder/git-blms/issues)
 
 ## 1.0.0 版本亮点
 
@@ -16,6 +16,7 @@ GitBlms 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 
 - 悬浮查看作者、提交时间、哈希和提交摘要
 - 支持未保存文件，优先基于当前编辑器内容执行 `git blame --contents -`
 - 未提交代码有单独的可配置样式
+- 支持为当前 Git 用户提交的代码设置单独色调，并保留时间色阶层次
 - 内置中英文运行时文案，并提供自定义插件图标
 
 ## 效果预览
@@ -59,6 +60,7 @@ GitBlms 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 
 | `easy-git.cacheTimeout` | `60000` | blame 缓存时长，单位毫秒 |
 | `easy-git.maxAnnotationWidth` | `22` | 左侧 blame 信息栏最大宽度，单位 `ch` |
 | `easy-git.uncommittedColor` | `"46,160,67"` | 未提交行颜色，支持 CSV、`rgb(...)` 和十六进制 |
+| `easy-git.currentAuthorColor` | `""` | 当前 Git 用户提交代码的高亮色。留空表示关闭，同时保留代码年龄色阶 |
 | `easy-git.language` | `"auto"` | 插件显示语言，可选 `auto`、`zh-CN`、`en` |
 
 ## 体验说明
