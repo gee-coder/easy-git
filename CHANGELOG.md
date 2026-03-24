@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 本项目的重要变更会记录在这里。
 
+## [1.1.0] - TBD
+
+### Breaking
+
+- **Gutter color indicators now default to hidden** on extension activation
+  - Previously: When `git-blms.enabled=true`, both gutter indicators and inline annotations were shown
+  - Now: When `git-blms.enabled=true`, only inline annotations are shown by default; gutter must be enabled via right-click menu
+- **Right-click menu commands no longer modify `git-blms.enabled` setting**
+  - Previously: Clicking "Show Inline Git Blame" or "Show Git Gutter" would automatically set `git-blms.enabled=true` in settings.json
+  - Now: These commands only work when `git-blms.enabled=true`; they no longer change the setting
+
+### Changed
+
+- `git-blms.enabled` now only controls inline annotation display state on startup, not gutter
+- Gutter display state is not persisted; each session starts with gutter hidden
+
+### 重大变更
+
+- **Gutter 颜色指示器现在默认隐藏**
+  - 之前：当 `git-blms.enabled=true` 时，gutter 指示器和行内注释都会显示
+  - 现在：当 `git-blms.enabled=true` 时，只有行内注释默认显示；gutter 需要通过右键菜单启用
+- **右键菜单命令不再修改 `git-blms.enabled` 设置**
+  - 之前：点击 "Show Inline Git Blame" 或 "Show Git Gutter" 会自动将 settings.json 中的 `git-blms.enabled` 设为 `true`
+  - 现在：这些命令仅在 `git-blms.enabled=true` 时生效；不再修改该设置
+
+### 变更
+
+- `git-blms.enabled` 现在只控制启动时行内注释的显示状态，不影响 gutter
+- Gutter 显示状态不持久化；每次会话启动时 gutter 默认隐藏
+
+### Migration / 迁移
+
+To restore previous behavior:
+1. Set `"git-blms.enabled": true` in settings.json
+2. Right-click in editor → "Show Git Gutter" to enable color indicators
+
+恢复之前行为的方法：
+1. 在 settings.json 中设置 `"git-blms.enabled": true`
+2. 右键点击编辑器 → "Show Git Gutter" 启用颜色指示器
+
 ## [1.0.2] - 2026-03-23
 
 ### Added
