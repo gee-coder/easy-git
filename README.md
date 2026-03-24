@@ -27,6 +27,7 @@ GitBlms is a VS Code extension that brings a GoLand-style inline Git blame exper
 
 - Stable left-side blame column that shows date and author per line
 - Bucketed age colors that emphasize visual contrast instead of a simple alpha fade
+- **Gutter color indicators** that show on each wrapped line for visual continuity with word wrap enabled
 - Hover-only commit details on the blame area to avoid blocking the code editor
 - Large-file guardrails and blame caching to reduce performance cost
 - Configurable maximum annotation width for compact blame layout
@@ -58,7 +59,7 @@ Default keybinding:
 | `git-blms.dateFormat` | `"absolute"` | `relative` or `absolute` timestamp display |
 | `git-blms.maxLineCount` | `5000` | Skip blame rendering for very large files |
 | `git-blms.cacheTimeout` | `60000` | Blame cache lifetime in milliseconds |
-| `git-blms.maxAnnotationWidth` | `22` | Maximum width of the blame column in `ch` |
+| `git-blms.maxAnnotationWidth` | `22` | Maximum total width of the annotation (time + separator + username). Time uses 10 display width, separator uses 2. Username uses the remaining space dynamically. |
 | `git-blms.uncommittedColor` | `"#2ea043"` | Color for uncommitted lines. Use hex to get a picker or inline preview in Settings |
 | `git-blms.highlightCurrentAuthor` | `false` | Highlights lines authored by the current Git user with a separate accent color |
 | `git-blms.currentAuthorColor` | `"#d97706"` | Accent color for current-user committed lines. Use hex to get a picker or inline preview in Settings |
