@@ -64,12 +64,6 @@ export class DecoratorManager implements vscode.Disposable {
     const generation = (this.refreshGeneration.get(documentKey) ?? 0) + 1;
     this.refreshGeneration.set(documentKey, generation);
 
-    if (!config.enabled) {
-      this.clearEditor(editor);
-      this.clearDocumentState(documentKey);
-      return;
-    }
-
     const lookup = await this.blameManager.getBlame(editor.document, config);
     if (this.refreshGeneration.get(documentKey) !== generation) {
       return;
@@ -331,10 +325,6 @@ export class DecoratorManager implements vscode.Disposable {
     document: vscode.TextDocument,
     contentChanges: readonly vscode.TextDocumentContentChangeEvent[]
   ): void {
-    if (!getExtensionConfig().enabled) {
-      return;
-    }
-
     const documentKey = document.uri.toString();
     const existingLines = this.renderedBlameLines.get(documentKey);
     if (!existingLines) {
@@ -389,10 +379,6 @@ export class DecoratorManager implements vscode.Disposable {
     document: vscode.TextDocument,
     contentChanges: readonly vscode.TextDocumentContentChangeEvent[]
   ): void {
-    if (!getExtensionConfig().enabled) {
-      return;
-    }
-
     const documentKey = document.uri.toString();
     const existingLines = this.renderedBlameLines.get(documentKey);
     if (!existingLines) {

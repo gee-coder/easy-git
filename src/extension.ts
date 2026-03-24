@@ -42,10 +42,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Show Blame - enables inline annotations (independent of gutter)
   registerCommand(COMMAND_SHOW_BLAME, async () => {
-    const config = getExtensionConfig();
-    if (!config.enabled) {
-      await setEnabled(true);
-    }
     dm.setAnnotationEnabled(true);
     await updateAnnotationEnabledContext(true);
   });
@@ -58,10 +54,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Show Gutter - enables gutter color indicators (independent of blame)
   registerCommand(COMMAND_SHOW_GUTTER, async () => {
-    const config = getExtensionConfig();
-    if (!config.enabled) {
-      await setEnabled(true);
-    }
     dm.setGutterEnabled(true);
     await updateGutterEnabledContext(true);
   });
@@ -157,12 +149,15 @@ async function initialize(decoratorManager: DecoratorManager): Promise<void> {
   const enabled = getExtensionConfig().enabled;
   await updateEnabledContext(enabled);
 
+  // Always set initial state and context keys
+  // When enabled=true: annotations on, gutter off
+  // When enabled=false: both off
+  decoratorManager.setGutterEnabled(false);
+  decoratorManager.setAnnotationEnabled(enabled);
+  await updateGutterEnabledContext(false);
+  await updateAnnotationEnabledContext(enabled);
+
   if (enabled) {
-    // Set initial state: both gutter and annotations enabled
-    decoratorManager.setGutterEnabled(true);
-    decoratorManager.setAnnotationEnabled(true);
-    await updateGutterEnabledContext(true);
-    await updateAnnotationEnabledContext(true);
     await decoratorManager.refreshVisibleEditors();
   }
 }
