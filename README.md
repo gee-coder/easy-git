@@ -27,6 +27,7 @@ GitBlms is a VS Code extension that brings a GoLand-style inline Git blame exper
 
 - Stable left-side blame column that shows date and author per line
 - Bucketed age colors that emphasize visual contrast instead of a simple alpha fade
+- **Gutter color indicators** that show on each wrapped line for visual continuity with word wrap enabled
 - Hover-only commit details on the blame area to avoid blocking the code editor
 - Large-file guardrails and blame caching to reduce performance cost
 - Configurable maximum annotation width for compact blame layout

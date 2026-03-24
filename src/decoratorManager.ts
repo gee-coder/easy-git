@@ -42,6 +42,8 @@ export class DecoratorManager implements vscode.Disposable {
   private readonly lastAnnotationWidths = new Map<string, number>();
   private readonly lastUsernameWidths = new Map<string, number>();
   private readonly currentAuthors = new Map<string, GitAuthorIdentity | undefined>();
+  // Cache for gutter decoration types by color
+  private readonly gutterDecorationTypes = new Map<string, vscode.TextEditorDecorationType>();
 
   constructor(private readonly blameManager: BlameManager) {}
 
@@ -160,6 +162,10 @@ export class DecoratorManager implements vscode.Disposable {
   clearAllEditors(): void {
     for (const editor of vscode.window.visibleTextEditors) {
       this.clearEditor(editor);
+      // Clear gutter decorations
+      for (const decorationType of this.gutterDecorationTypes.values()) {
+        editor.setDecorations(decorationType, []);
+      }
     }
     this.renderedBlameLines.clear();
     this.renderedLineInfo.clear();
@@ -178,10 +184,34 @@ export class DecoratorManager implements vscode.Disposable {
     this.pendingRefreshes.clear();
     this.committedDecorationType.dispose();
     this.uncommittedDecorationType.dispose();
+    // Dispose all gutter decoration types
+    for (const decorationType of this.gutterDecorationTypes.values()) {
+      decorationType.dispose();
+    }
+    this.gutterDecorationTypes.clear();
   }
 
   getLineInfo(uri: vscode.Uri, lineNumber: number): BlameLineInfo | undefined {
     return this.renderedLineInfo.get(uri.toString())?.get(lineNumber);
+  }
+
+  /**
+   * Get or create a gutter decoration type for the specified color.
+   * @param color - Hex color string (e.g., "#ff0000")
+   * @returns TextEditorDecorationType with gutter icon configured
+   */
+  private getOrCreateGutterDecorationType(color: string): vscode.TextEditorDecorationType {
+    if (!this.gutterDecorationTypes.has(color)) {
+      const gutterIcon = getColorIndicator(color);
+      this.gutterDecorationTypes.set(
+        color,
+        vscode.window.createTextEditorDecorationType({
+          gutterIconPath: vscode.Uri.parse(gutterIcon),
+          gutterIconSize: "12px"
+        })
+      );
+    }
+    return this.gutterDecorationTypes.get(color)!;
   }
 
   prepareForDelete(editor: vscode.TextEditor | undefined, direction: "left" | "right"): void {
@@ -218,9 +248,14 @@ export class DecoratorManager implements vscode.Disposable {
     annotationWidth: string,
     usernameDisplayWidth: number,
     currentAuthor?: GitAuthorIdentity
-  ): { committed: vscode.DecorationOptions[]; uncommitted: vscode.DecorationOptions[] } {
+  ): {
+    committed: vscode.DecorationOptions[];
+    uncommitted: vscode.DecorationOptions[];
+    gutterByColor: Map<string, vscode.DecorationOptions[]>
+  } {
     const committed: vscode.DecorationOptions[] = [];
     const uncommitted: vscode.DecorationOptions[] = [];
+    const gutterByColor = new Map<string, vscode.DecorationOptions[]>();
 
     for (const line of lines) {
       const option = this.createDecorationOption(
@@ -243,9 +278,18 @@ export class DecoratorManager implements vscode.Disposable {
       } else {
         committed.push(option);
       }
+
+      // Group gutter decorations by color
+      const color = calculateGutterIconColor(line, config, locale, currentAuthor);
+      if (!gutterByColor.has(color)) {
+        gutterByColor.set(color, []);
+      }
+      gutterByColor.get(color)!.push({
+        range: option.range
+      });
     }
 
-    return { committed, uncommitted };
+    return { committed, uncommitted, gutterByColor };
   }
 
   private applyTransientDecorations(
@@ -395,10 +439,28 @@ export class DecoratorManager implements vscode.Disposable {
 
   private setEditorDecorations(
     editor: vscode.TextEditor,
-    options: { committed: vscode.DecorationOptions[]; uncommitted: vscode.DecorationOptions[] }
+    options: {
+      committed: vscode.DecorationOptions[];
+      uncommitted: vscode.DecorationOptions[];
+      gutterByColor: Map<string, vscode.DecorationOptions[]>
+    }
   ): void {
     editor.setDecorations(this.committedDecorationType, options.committed);
     editor.setDecorations(this.uncommittedDecorationType, options.uncommitted);
+
+    // Set gutter decorations by color
+    for (const [color, decorations] of options.gutterByColor) {
+      const decorationType = this.getOrCreateGutterDecorationType(color);
+      editor.setDecorations(decorationType, decorations);
+    }
+
+    // Clear any gutter decorations that are no longer needed
+    const usedColors = new Set(options.gutterByColor.keys());
+    for (const [color, decorationType] of this.gutterDecorationTypes) {
+      if (!usedColors.has(color)) {
+        editor.setDecorations(decorationType, []);
+      }
+    }
   }
 
   private maskUncommittedEditorsForDelete(document: vscode.TextDocument): void {
@@ -510,6 +572,7 @@ export class DecoratorManager implements vscode.Disposable {
     }
 
     const textLine = document.lineAt(line.lineNumber);
+
     return {
       range: getAnnotationRange(textLine),
       renderOptions: {
@@ -711,6 +774,60 @@ function createRenderedLineInfo(lines: readonly BlameLineInfo[]): Map<number, Bl
   );
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
+// Gutter color indicator cache
+const colorIndicatorCache = new Map<string, string>();
+
+/**
+ * Create a color indicator SVG Data URI for gutter decoration.
+ * @param color - Hex color string (e.g., "#ff0000")
+ * @returns SVG Data URI string
+ */
+function createColorIndicator(color: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+    <rect width="12" height="12" fill="${color}" rx="2"/>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * Get color indicator SVG Data URI with caching.
+ * @param color - Hex color string
+ * @returns SVG Data URI string
+ */
+function getColorIndicator(color: string): string {
+  if (!colorIndicatorCache.has(color)) {
+    colorIndicatorCache.set(color, createColorIndicator(color));
+  }
+  return colorIndicatorCache.get(color)!;
+}
+
+/**
+ * Calculate gutter icon color for a blame line based on commit info and config.
+ * @param line - Blame line information
+ * @param config - Extension configuration
+ * @param locale - Locale for date formatting
+ * @param currentAuthor - Current git author identity
+ * @returns Hex color string for the gutter icon
+ */
+function calculateGutterIconColor(
+  line: BlameLineInfo,
+  config: GitBlmsConfig,
+  locale: string,
+  currentAuthor?: GitAuthorIdentity
+): string {
+  const timestampMs = line.authorTime * 1000;
+
+  if (line.isUncommitted) {
+    return calculateUncommittedAnnotationBackground(config.uncommittedColor);
+  }
+
+  const isCurrentAuthor = Boolean(
+    config.highlightCurrentAuthor &&
+    config.currentAuthorColor.trim() &&
+    isCurrentAuthorLine(line, currentAuthor)
+  );
+
+  return isCurrentAuthor
+    ? calculateCurrentAuthorAnnotationBackground(timestampMs, config.currentAuthorColor)
+    : calculateAnnotationBackground(timestampMs, config.colorScheme);
 }

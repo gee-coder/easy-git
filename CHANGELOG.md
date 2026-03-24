@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 本项目的重要变更会记录在这里。
 
+## [1.0.2] - 2026-03-23
+
+### Added
+
+- **Gutter color indicators** for word wrap support: Color-coded markers in the gutter area that appear on each wrapped line, providing visual continuity when word wrap is enabled
+- Colors match the existing age-based annotation scheme for consistency
+
+### 新增
+
+- **Gutter 颜色指示器**支持 word wrap：在 gutter 区域显示基于 blame 信息的颜色标记，当启用 word wrap 时在每个折行上显示，提供视觉连续性
+- 颜色与现有的基于年龄的注解颜色方案保持一致
+
 ## [1.0.1] - 2026-03-20
 
 ### Changed
