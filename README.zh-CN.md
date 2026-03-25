@@ -9,7 +9,7 @@ GitBlms 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 
 - 仓库主页: [https://github.com/gee-coder/git-blms.git](https://github.com/gee-coder/git-blms.git)
 - 问题反馈: [https://github.com/gee-coder/git-blms/issues](https://github.com/gee-coder/git-blms/issues)
 
-## 1.0.0 版本亮点
+## 1.0.2 版本亮点
 
 - 参考 GoLand 的左侧 blame 信息栏，布局稳定不顶代码
 - 按代码年龄分层的颜色色阶，便于快速识别新旧代码
@@ -18,6 +18,8 @@ GitBlms 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 
 - 未提交代码有单独的可配置样式
 - 支持为当前 Git 用户提交的代码设置单独色调，并保留时间色阶层次
 - 内置中英文运行时文案，并提供自定义插件图标
+- **Gutter 颜色指示器**：在 word wrap 启用时，每个折行显示颜色标记，保持视觉连续
+- 动态用户名宽度，支持配置注释区域最大宽度
 
 ## 效果预览
 
