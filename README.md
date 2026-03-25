@@ -9,7 +9,7 @@ GitBlms is a VS Code extension that brings a GoLand-style inline Git blame exper
 - Repository: [https://github.com/gee-coder/git-blms.git](https://github.com/gee-coder/git-blms.git)
 - Issues: [https://github.com/gee-coder/git-blms/issues](https://github.com/gee-coder/git-blms/issues)
 
-## 1.0.0 Highlights
+## 1.0.2 Highlights
 
 - GoLand-inspired left-side blame column with stable layout
 - Age-based color buckets that make new and old code easy to scan at a glance
@@ -18,6 +18,8 @@ GitBlms is a VS Code extension that brings a GoLand-style inline Git blame exper
 - Dedicated configurable style for uncommitted lines
 - Optional current-author highlight color that keeps age buckets but uses your own accent palette
 - Built-in Chinese and English runtime text, plus a custom extension icon
+- **Gutter color indicators** that show on each wrapped line for visual continuity with word wrap enabled
+- Dynamic username width with configurable maximum annotation width
 
 ## Preview
 
